@@ -1,0 +1,1 @@
+loadstring(game:HttpGet('https://raw.githubusercontent.com/decryp1/snow-shoveling-simulator-script/refs/heads/main/snow%20shoveling%20sim%20script'))()

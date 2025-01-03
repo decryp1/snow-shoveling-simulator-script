@@ -6,69 +6,63 @@ local Window = Rayfield:CreateWindow({
 })
 
 local Tab = Window:CreateTab("Shoveler")
-local ToggleState = false
-local ShovelLoopConnection
-
+local tgstate = false
+local shovloopheartbeat
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
-
 local Regions = Workspace:WaitForChild("Regions")
 local Winterville = Regions:WaitForChild("Winterville")
 local Tiles = Winterville:WaitForChild("Tiles")
-
 local RemoteEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Network"):WaitForChild("RemoteEvent")
-local function getClosestSnowTile()
-    local closestTile = nil
+local function findsnowtile()
+    local closesttile = nil
     local shortestDistance = math.huge
     local character = LocalPlayer.Character
     local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-
     if not rootPart then return nil end
-
     for _, tile in ipairs(Tiles:GetChildren()) do
         if tile:IsA("BasePart") and tile.Name == "Snow" then
             local distance = (rootPart.Position - tile.Position).Magnitude
             if distance < shortestDistance then
-                closestTile = tile
+                closesttile = tile
                 shortestDistance = distance
             end
         end
     end
-
-    return closestTile
+    return closesttile
 end
 
-local function shovelClosestTile()
-    local closestTile = getClosestSnowTile()
-    if closestTile then
+local function shovclosesttile()
+    local closesttile = findsnowtile()
+    if closesttile then
         local args = {
             [1] = "Shovel",
             [2] = LocalPlayer.Character:FindFirstChild("Plastic Shovel"),
-            [3] = {closestTile}
+            [3] = {closesttile}
         }
         RemoteEvent:FireServer(unpack(args))
     else
-        warn("No snow tile found.")
+        warn("no snow tile found.")
     end
 end
-local function toggleShovel(state)
-    ToggleState = state
+local function tgshovel(state)
+    tgstate = state
 
-    if ToggleState then
-        ShovelLoopConnection = task.spawn(function()
-            while ToggleState do
-                shovelClosestTile()
+    if tgstate then
+        shovloopheartbeat = task.spawn(function()
+            while tgstate do
+                shovclosesttile()
                 task.wait(0.0001)
             end
         end)
     else
 
-        ToggleState = false
-        if ShovelLoopConnection then
-            task.cancel(ShovelLoopConnection)
-            ShovelLoopConnection = nil
+        tgstate = false
+        if shovloopheartbeat then
+            task.cancel(shovloopheartbeat)
+            shovloopheartbeat = nil
         end
     end
 end
@@ -78,11 +72,11 @@ Tab:CreateToggle({
     CurrentValue = false,
     Flag = "ShovelToggle",
     Callback = function(value)
-        toggleShovel(value)
+        tgshovel(value)
     end
 })
 
-local ToggleState = false
+local tgstate = false
 local WaitTime = 5
 
 local Players = game:GetService("Players")
@@ -109,7 +103,7 @@ local function teleportTo(cframe)
 end
 
 local function autoSellLoop()
-    while ToggleState do
+    while tgstate do
         local guiPath = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui"):WaitForChild("Hud"):WaitForChild("Stats"):WaitForChild("Snow"):WaitForChild("Progress"):WaitForChild("AmountLabel")
         if guiPath and table.find(validAmounts, guiPath.Text) then
             local originalCFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
@@ -139,8 +133,8 @@ Tab:CreateToggle({
     CurrentValue = false,
     Flag = "AutoSellToggle",
     Callback = function(value)
-        ToggleState = value
-        if ToggleState then
+        tgstate = value
+        if tgstate then
             task.spawn(autoSellLoop)
         end
     end
@@ -157,13 +151,13 @@ Tab:CreateSlider({
     end
 })
 
-local PresentToggleState = false
-local PresentLoopConnection
+local Presenttgstate = false
+local presentheartbeat
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local function interactWithPresent()
+local function collectpresent()
     local present = Workspace:FindFirstChild("Present")
     if present and present:FindFirstChild("Primary") and present.Primary:FindFirstChild("TouchInterest") then
         firetouchinterest(LocalPlayer.Character.HumanoidRootPart, present.Primary, 0) -- Touch
@@ -174,20 +168,20 @@ local function interactWithPresent()
     end
 end
 
-local function togglePresentInteraction(state)
-    PresentToggleState = state
-    if PresentToggleState then
-        PresentLoopConnection = task.spawn(function()
-            while PresentToggleState do
-                interactWithPresent()
+local function collectpresenttoggle(state)
+    Presenttgstate = state
+    if Presenttgstate then
+        presentheartbeat = task.spawn(function()
+            while Presenttgstate do
+                collectpresent()
                 task.wait(0.5)
             end
         end)
     else
-        PresentToggleState = false
-        if PresentLoopConnection then
-            task.cancel(PresentLoopConnection)
-            PresentLoopConnection = nil
+        Presenttgstate = false
+        if presentheartbeat then
+            task.cancel(presentheartbeat)
+            presentheartbeat = nil
         end
     end
 end
@@ -197,6 +191,6 @@ Tab:CreateToggle({
     CurrentValue = false,
     Flag = "PresentToggle",
     Callback = function(value)
-        togglePresentInteraction(value)
+        collectpresenttoggle(value)
     end
 })
